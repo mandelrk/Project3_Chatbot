@@ -8,6 +8,144 @@ RUBRIC: Search Engine Implementation (13 marks total)
 
 TASK: Implement RAG search engine with governance integration
 """
+# import mlflow
+# from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
+# from src.config import Config
+# from governance.governance_gate import GovernanceGate
+# from src.vector_store import get_vector_store
+
+# class TravelSearchEngine:
+#     """RAG-powered search engine for travel queries"""
+    
+#     def __init__(self):
+#         """
+#         Initialize search engine components
+        
+#         HINT: Initialize:
+#         1. Governance gate
+#         2. Azure Chat OpenAI (LLM)
+#         3. Azure OpenAI Embeddings
+#         4. Vector store using get_vector_store
+#         """
+#         # HINT: Initialize governance gate
+#         self.governance_gate = ___() 
+        
+#         # HINT: Initialize Azure Chat OpenAI LLM
+#         # Required params: api_key, azure_endpoint, api_version, deployment_name, temperature
+#         self.llm = AzureChatOpenAI(
+#             api_key=Config.___,
+#             azure_endpoint=Config.___,
+#             api_version=Config.___,
+#             deployment_name=Config.___,
+#             temperature=___ 
+#         )
+        
+#         # HINT: Initialize Azure OpenAI Embeddings
+#         # Required params: api_key, azure_endpoint, azure_deployment, api_version
+#         self.embeddings = AzureOpenAIEmbeddings(
+#             api_key=Config.___,  
+#             azure_endpoint=Config.___,  
+#             azure_deployment=Config.___,  
+#             api_version=Config.___,  
+#         )
+        
+#         # HINT: Initialize Vector Store using get_vector_store function
+#         self.vector_store = ___(self.___) 
+    
+#     def search_by_text(self, query_text: str, k: int = 5):
+#         """
+#         Search for travel information using a text query
+        
+#         HINT: This method should:
+#         1. Set MLflow experiment
+#         2. Start MLflow run
+#         3. Validate input with governance gate
+#         4. Perform similarity search on vector store
+#         5. Log metrics to MLflow
+#         6. Return results and query
+#         """
+        
+#         # HINT: Set MLflow experiment name from Config
+#         mlflow.set_experiment(Config.___)  
+        
+#         with mlflow.start_run(run_name="search_travel_info"):
+#             print(f"DEBUG: Text Query: {query_text}")
+            
+#             # HINT: Validate input using governance gate
+#             gov_check = self.governance_gate.___(___)
+            
+#             if not gov_check['___']:  
+#                 # HINT: Log governance failure event
+#                 mlflow.log_event("GovernanceCheckFailed", {"violations": gov_check['___']}) 
+#                 return [], "Query blocked by security checks."
+
+#             # HINT: Log parameters to MLflow
+#             mlflow.log_param("k", ___)  
+#             mlflow.log_param("query_text", ___)  
+            
+#             # HINT: Perform similarity search on vector store
+#             docs = self.vector_store.___(query_text, k=___) 
+            
+#             # HINT: Log metric for number of results
+#             mlflow.log_metric("results_count", len(___))
+            
+#             return docs, query_text
+
+#     def synthesize_response(self, docs, user_query):
+#         """
+#         Generate a conversational response based on retrieved documents
+        
+#         HINT: This method should:
+#         1. Start MLflow run
+#         2. Build context from retrieved documents
+#         3. Create a prompt for the LLM
+#         4. Generate response using LLM
+#         5. Validate output with governance gate
+#         6. Log response to MLflow
+#         7. Return final response
+#         """
+        
+#         mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
+        
+#         with mlflow.start_run(run_name="synthesize_response"):
+#             # HINT: Handle case when no documents found
+#             if not docs:
+#                 return "___" 
+            
+#             # HINT: Build context from documents
+#             # Format: "- {content} (Source: {source})"
+#             context = "\n".join([
+#                 f"- {doc.___} (Source: {doc.metadata.get('___', 'Unknown')})" 
+#                 for doc in docs
+#             ])
+            
+#             # HINT: Create prompt for LLM
+#             prompt = f"""
+#             You are a helpful travel assistant for Wanderlust Travels, an online travel agency.
+#             Use the following information from our knowledge base to answer the customer's question.
+            
+#             Knowledge Base Information:
+#             {___}
+            
+#             Customer Question: "{___}"
+            
+#             Please provide a clear, helpful, and accurate answer based on the information above.
+#             If the information is not sufficient, let the customer know and provide general guidance.
+#             """  # HINT: context, user_query
+            
+#             # HINT: Generate response using LLM
+#             response = self.llm.___(___).___  
+            
+#             # HINT: Validate output using governance gate
+#             gov_check = self.governance_gate.___(___) 
+            
+#             if not gov_check['___']:  
+#                 return "___"  # HINT: "I generated a response but it didn't pass safety checks. Please rephrase your question."
+            
+#             # HINT: Log response to MLflow as text file
+#             mlflow.log_text(___, "final_response.txt")
+            
+#             return response
 import mlflow
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from src.config import Config
@@ -27,30 +165,30 @@ class TravelSearchEngine:
         3. Azure OpenAI Embeddings
         4. Vector store using get_vector_store
         """
-        # HINT: Initialize governance gate
-        self.governance_gate = ___() 
+        # Initialize governance gate
+        self.governance_gate = GovernanceGate() 
         
-        # HINT: Initialize Azure Chat OpenAI LLM
+        # Initialize Azure Chat OpenAI LLM
         # Required params: api_key, azure_endpoint, api_version, deployment_name, temperature
         self.llm = AzureChatOpenAI(
-            api_key=Config.___,
-            azure_endpoint=Config.___,
-            api_version=Config.___,
-            deployment_name=Config.___,
-            temperature=___ 
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            api_version=Config.AZURE_OPENAI_API_VERSION,
+            deployment_name=Config.AZURE_OPENAI_CHAT_DEPLOYMENT_NAME,
+            temperature=0.0 
         )
         
-        # HINT: Initialize Azure OpenAI Embeddings
+        # Initialize Azure OpenAI Embeddings
         # Required params: api_key, azure_endpoint, azure_deployment, api_version
         self.embeddings = AzureOpenAIEmbeddings(
-            api_key=Config.___,  
-            azure_endpoint=Config.___,  
-            azure_deployment=Config.___,  
-            api_version=Config.___,  
+            api_key=Config.AZURE_OPENAI_API_KEY,  
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,  
+            azure_deployment=Config.AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME,  
+            api_version=Config.AZURE_OPENAI_API_VERSION,  
         )
         
-        # HINT: Initialize Vector Store using get_vector_store function
-        self.vector_store = ___(self.___) 
+        # Initialize Vector Store using get_vector_store function
+        self.vector_store = get_vector_store(self.embeddings) 
     
     def search_by_text(self, query_text: str, k: int = 5):
         """
@@ -65,29 +203,29 @@ class TravelSearchEngine:
         6. Return results and query
         """
         
-        # HINT: Set MLflow experiment name from Config
-        mlflow.set_experiment(Config.___)  
+        # Set MLflow experiment name from Config
+        mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)  
         
         with mlflow.start_run(run_name="search_travel_info"):
             print(f"DEBUG: Text Query: {query_text}")
             
-            # HINT: Validate input using governance gate
-            gov_check = self.governance_gate.___(___)
+            # Validate input using governance gate
+            gov_check = self.governance_gate.validate_input(query_text)
             
-            if not gov_check['___']:  
-                # HINT: Log governance failure event
-                mlflow.log_event("GovernanceCheckFailed", {"violations": gov_check['___']}) 
+            if not gov_check['passed']:  
+                # Log governance failure event
+                mlflow.log_event("GovernanceCheckFailed", {"violations": gov_check['violations']}) 
                 return [], "Query blocked by security checks."
 
-            # HINT: Log parameters to MLflow
-            mlflow.log_param("k", ___)  
-            mlflow.log_param("query_text", ___)  
+            # Log parameters to MLflow
+            mlflow.log_param("k", k)  
+            mlflow.log_param("query_text", query_text)  
             
-            # HINT: Perform similarity search on vector store
-            docs = self.vector_store.___(query_text, k=___) 
+            # Perform similarity search on vector store
+            docs = self.vector_store.similarity_search(query_text, k=k) 
             
-            # HINT: Log metric for number of results
-            mlflow.log_metric("results_count", len(___))
+            # Log metric for number of results
+            mlflow.log_metric("results_count", len(docs))
             
             return docs, query_text
 
@@ -108,41 +246,41 @@ class TravelSearchEngine:
         mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
         
         with mlflow.start_run(run_name="synthesize_response"):
-            # HINT: Handle case when no documents found
+            # Handle case when no documents found
             if not docs:
-                return "___" 
+                return "I couldn't find any relevant information in our knowledge base to answer your query." 
             
-            # HINT: Build context from documents
+            # Build context from documents
             # Format: "- {content} (Source: {source})"
             context = "\n".join([
-                f"- {doc.___} (Source: {doc.metadata.get('___', 'Unknown')})" 
+                f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})" 
                 for doc in docs
             ])
             
-            # HINT: Create prompt for LLM
+            # Create prompt for LLM
             prompt = f"""
             You are a helpful travel assistant for Wanderlust Travels, an online travel agency.
             Use the following information from our knowledge base to answer the customer's question.
             
             Knowledge Base Information:
-            {___}
+            {context}
             
-            Customer Question: "{___}"
+            Customer Question: "{user_query}"
             
             Please provide a clear, helpful, and accurate answer based on the information above.
             If the information is not sufficient, let the customer know and provide general guidance.
-            """  # HINT: context, user_query
+            """  
             
-            # HINT: Generate response using LLM
-            response = self.llm.___(___).___  
+            # Generate response using LLM
+            response = self.llm.invoke(prompt).content  
             
-            # HINT: Validate output using governance gate
-            gov_check = self.governance_gate.___(___) 
+            # Validate output using governance gate
+            gov_check = self.governance_gate.validate_output(response) 
             
-            if not gov_check['___']:  
-                return "___"  # HINT: "I generated a response but it didn't pass safety checks. Please rephrase your question."
+            if not gov_check['passed']:  
+                return "I generated a response but it didn't pass safety checks. Please rephrase your question."  
             
-            # HINT: Log response to MLflow as text file
-            mlflow.log_text(___, "final_response.txt")
+            # Log response to MLflow as text file
+            mlflow.log_text(response, "final_response.txt")
             
             return response
