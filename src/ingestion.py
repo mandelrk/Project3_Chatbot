@@ -119,6 +119,10 @@ def ingest_travel_documents():
         # Verification
         # ====================
         print("\n🔍 Verifying index...")
+        if mlflow_active:
+            mlflow.end_run()
+            mlflow_active = False
+
         test_query = "baggage allowance"
         results, _ = engine.search_by_text(test_query, k=3)
 

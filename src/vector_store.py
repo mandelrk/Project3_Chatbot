@@ -65,13 +65,13 @@ def get_vector_store(embedding_function):
     """
     
     # Get configuration values from Config class
-    endpoint = Config.AZURE_SEARCH_SERVICE_ENDPOINT 
-    key = Config.AZURE_SEARCH_API_KEY  
+    endpoint = Config.AZURE_SEARCH_ENDPOINT
+    key = Config.AZURE_SEARCH_KEY
     index_name = Config.AZURE_SEARCH_INDEX_NAME  
     
     # Validate that required credentials are present
     if not endpoint or not key:
-        raise ValueError("AZURE_SEARCH_SERVICE_ENDPOINT and AZURE_SEARCH_API_KEY must be set.") 
+        raise ValueError("AZURE_SEARCH_ENDPOINT and AZURE_SEARCH_KEY must be set.")
     
     # Initialize AzureSearch vector store
     # Required parameters: azure_search_endpoint, azure_search_key, 
