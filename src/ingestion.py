@@ -35,10 +35,10 @@ def ingest_travel_documents():
     print("=" * 70)
 
     # HINT: Initialize components
-    loader = ___()  
+    loader = TravelDataLoader()
 
     try:
-        engine = ___() 
+        engine = TravelSearchEngine()
     except Exception as e:
         print(f"❌ Failed to initialize search engine: {e}")
         return
@@ -47,17 +47,17 @@ def ingest_travel_documents():
     # MLflow Setup (fail-safe)
     # ====================
     mlflow_active = False
-    if Config.___:  
+    if Config.MLFLOW_TRACKING_URI:
         try:
-            mlflow.set_experiment(Config.___)  
-            mlflow.start_run(run_name="___")  # HINT: "document_ingestion"
+            mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
+            mlflow.start_run(run_name="document_ingestion")
             mlflow_active = True
         except Exception as e:
             print(f"⚠️  MLflow disabled: {e}")
 
     try:
         # HINT: Load documents
-        documents = loader.___() 
+        documents = loader.load_all_travel_documents()
 
         if not documents:
             print("\n⚠️  No documents found in data directory")
@@ -68,7 +68,7 @@ def ingest_travel_documents():
             return
 
         # HINT: Split into chunks
-        chunks = loader.___(documents)  
+        chunks = loader.split_documents(documents)
 
         print(f"\n📊 Ingestion Summary:")
         print(f"   Total chunks to index: {len(chunks)}")
@@ -82,7 +82,7 @@ def ingest_travel_documents():
         # Batch Ingestion
         # ====================
         print("\n📥 Indexing documents to Azure AI Search...")
-        batch_size = ___  # HINT: 50
+        batch_size = 50
         total_batches = (len(chunks) + batch_size - 1) // batch_size
 
         ingested_count = 0
@@ -98,9 +98,9 @@ def ingest_travel_documents():
 
             try:
                 # HINT: Add documents to vector store
-                engine.vector_store.___(batch) 
+                engine.vector_store.add_documents(batch)
                 ingested_count += len(batch)
-                time.sleep(___)  # avoid rate limits
+                time.sleep(0.1)  # avoid rate limits
 
             except Exception as e:
                 print(f"\n❌ Error indexing batch {i // batch_size + 1}: {e}")
@@ -119,8 +119,8 @@ def ingest_travel_documents():
         # Verification
         # ====================
         print("\n🔍 Verifying index...")
-        test_query = "___"  
-        results, _ = engine.___(test_query, k=___) 
+        test_query = "baggage allowance"
+        results, _ = engine.search_by_text(test_query, k=3)
 
         if results:
             print("✅ Index verification successful!")
@@ -134,7 +134,7 @@ def ingest_travel_documents():
 
     finally:
         if mlflow_active:
-            mlflow.___() 
+            mlflow.end_run()
 
     print("\n" + "=" * 70)
     print("🎉 Ingestion pipeline completed!\n")
