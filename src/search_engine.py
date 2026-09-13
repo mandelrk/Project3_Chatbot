@@ -163,28 +163,21 @@ class TravelSearchEngine:
         # Initialize governance gate
         self.governance_gate = GovernanceGate() 
         
-        # Safe configuration value extractions matching test mocks
-        api_key = getattr(Config, "AZURE_OPENAI_API_KEY", "fake-key")
-        azure_endpoint = getattr(Config, "AZURE_OPENAI_ENDPOINT", "https://fake.openai.azure.com/")
-        api_version = getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
-        deployment_name = getattr(Config, "AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o")
-        embedding_deployment = getattr(Config, "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-3-small")
-
         # Initialize Azure Chat OpenAI LLM
         self.llm = AzureChatOpenAI(
-            api_key=api_key,
-            azure_endpoint=azure_endpoint,
-            api_version=api_version,
-            azure_deployment=deployment_name,
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            api_version=getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),
+            azure_deployment=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
             temperature=0.0 
         )
         
         # Initialize Azure OpenAI Embeddings
         self.embeddings = AzureOpenAIEmbeddings(
-            api_key=api_key,  
-            azure_endpoint=azure_endpoint,  
-            azure_deployment=embedding_deployment,  
-            api_version=api_version,  
+            api_key=Config.AZURE_OPENAI_API_KEY,  
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,  
+            azure_deployment=getattr(Config, "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", Config.AZURE_OPENAI_DEPLOYMENT_NAME),  
+            api_version=getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),  
         )
         
         # Initialize Vector Store using get_vector_store function
@@ -194,8 +187,9 @@ class TravelSearchEngine:
         """
         Search for travel information using a text query
         """
-        experiment_name = getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag")
-        mlflow.set_experiment(experiment_name)  
+        
+        # Set MLflow experiment name from Config
+        mlflow.set_experiment(getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag"))  
         
         with mlflow.start_run(run_name="search_travel_info"):
             print(f"DEBUG: Text Query: {query_text}")
@@ -204,6 +198,7 @@ class TravelSearchEngine:
             gov_check = self.governance_gate.validate_input(query_text)
             
             if not gov_check['passed']:  
+                # Log governance failure event via tags/params
                 mlflow.set_tag("governance_status", "FAILED")
                 mlflow.log_param("violations", str(gov_check['violations'])) 
                 return [], "Query blocked by security checks."
@@ -224,18 +219,21 @@ class TravelSearchEngine:
         """
         Generate a conversational response based on retrieved documents
         """
-        experiment_name = getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag")
-        mlflow.set_experiment(experiment_name)
+        
+        mlflow.set_experiment(getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag"))
         
         with mlflow.start_run(run_name="synthesize_response"):
+            # Handle case when no documents found
             if not docs:
                 return "I couldn't find any relevant information in our knowledge base to answer your query." 
             
+            # Build context from documents
             context = "\n".join([
                 f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})" 
                 for doc in docs
             ])
             
+            # Create prompt for LLM
             prompt = f"""
             You are a helpful travel assistant for Wanderlust Travels, an online travel agency.
             Use the following information from our knowledge base to answer the customer's question.
@@ -249,13 +247,16 @@ class TravelSearchEngine:
             If the information is not sufficient, let the customer know and provide general guidance.
             """  
             
+            # Generate response using LLM
             response = self.llm.invoke(prompt).content  
             
+            # Validate output using governance gate
             gov_check = self.governance_gate.validate_output(response) 
             
             if not gov_check['passed']:  
                 return "I generated a response but it didn't pass safety checks. Please rephrase your question."  
             
+            # Log response to MLflow as text file
             mlflow.log_text(response, "final_response.txt")
             
             return response
