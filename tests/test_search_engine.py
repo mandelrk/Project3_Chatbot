@@ -14,23 +14,27 @@ def mock_config():
         yield MockConfig
 
 class TestTravelSearchEngine:
+    @patch("src.search_engine.GovernanceGate")
     @patch("src.search_engine.AzureChatOpenAI")
     @patch("src.search_engine.AzureOpenAIEmbeddings")
     @patch("src.search_engine.get_vector_store")
-    def test_initialization(self, mock_store, mock_embed, mock_chat):
+    def test_initialization(self, mock_store, mock_embed, mock_chat, mock_gate):
         engine = TravelSearchEngine()
         assert engine is not None
 
+    @patch("src.search_engine.mlflow")
     @patch("src.search_engine.AzureChatOpenAI")
     @patch("src.search_engine.AzureOpenAIEmbeddings")
     @patch("src.search_engine.get_vector_store")
-    def test_search_by_text(self, mock_store, mock_embed, mock_chat):
+    def test_search_by_text(self, mock_store, mock_embed, mock_chat, mock_mlflow):
         # Mock vector store
         mock_vector_store = MagicMock()
         mock_store.return_value = mock_vector_store
         mock_vector_store.similarity_search.return_value = [
             MagicMock(page_content="Baggage allowance is 23kg", metadata={"source": "policy.pdf"})
         ]
+
+        mock_mlflow.start_run.return_value.__enter__.return_value = None
         
         # Mock governance gate
         with patch("src.search_engine.GovernanceGate") as MockGate:
