@@ -17,13 +17,13 @@ class PIIDetector:
         # HINT: Define regex patterns for common PII types
         # You need patterns for: email, phone, ssn, credit_card, passport, zip_code, ip_address
         self.patterns = {
-            'email': r'___',  # HINT: Pattern like name@domain.com
-            'phone': r'___',  # HINT: Pattern for (123) 456-7890 or 123-456-7890 format
-            'ssn': r'___',  # HINT: Pattern for XXX-XX-XXXX format
-            'credit_card': r'___',  # HINT: Pattern for 16 digits with optional spaces/hyphens
-            'passport': r'___',  # HINT: Pattern for 1-2 letters followed by 6-9 digits
-            'zip_code': r'___',  # HINT: Pattern for 5 digits or 5+4 format
-            'ip_address': r'___'  # HINT: Pattern for IPv4 address (four groups of 1-3 digits)
+            'email': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b',
+            'phone': r'\b(?:\(\d{3}\)\s?|\d{3}[-.\s])\d{3}[-.\s]\d{4}\b',
+            'ssn': r'\b\d{3}-\d{2}-\d{4}\b',
+            'credit_card': r'\b(?:\d[ -]*?){13,16}\b',
+            'passport': r'\b[A-Z]{1,2}\d{6,9}\b',
+            'zip_code': r'\b\d{5}(?:-\d{4})?\b',
+            'ip_address': r'\b(?:\d{1,3}\.){3}\d{1,3}\b'
         }
     
     def detect(self, text: str) -> Dict:
@@ -40,23 +40,23 @@ class PIIDetector:
         entities = []
         
         # HINT: Loop through each pattern type and pattern
-        for entity_type, pattern in self.patterns.___():
+        for entity_type, pattern in self.patterns.items():
             # HINT: Use re.finditer to find all matches
-            matches = re.___(pattern, text)
+            matches = re.finditer(pattern, text)
             
             for match in matches:
                 # HINT: Append entity info to entities list
                 entities.append({
-                    'type': ___,  # HINT: entity_type
-                    'value': ___,  # HINT: match.group()
-                    'start': ___,  # HINT: match.start()
-                    'end': ___     # HINT: match.end()
+                    'type': entity_type,
+                    'value': match.group(),
+                    'start': match.start(),
+                    'end': match.end()
                 })
         
         return {
-            'has_pii': ___,  # HINT: len(entities) > 0
-            'entities': ___,  # HINT: entities
-            'count': ___     # HINT: len(entities)
+            'has_pii': len(entities) > 0,
+            'entities': entities,
+            'count': len(entities)
         }
     
     def redact(self, text: str) -> str:
@@ -70,15 +70,15 @@ class PIIDetector:
         # HINT: Loop through patterns and redact each type
         for entity_type, pattern in self.patterns.items():
             if entity_type == 'email':
-                redacted_text = re.sub(pattern, '___', redacted_text)  # HINT: '[EMAIL_REDACTED, PHONE_REDACTED, etc.]'
+                redacted_text = re.sub(pattern, '[EMAIL_REDACTED]', redacted_text)
             elif entity_type == 'phone':
-                redacted_text = re.sub(pattern, '___', redacted_text)  
+                redacted_text = re.sub(pattern, '[PHONE_REDACTED]', redacted_text)
             elif entity_type == 'passport':
-                redacted_text = re.sub(pattern, '___', redacted_text)  
+                redacted_text = re.sub(pattern, '[PASSPORT_REDACTED]', redacted_text)
             elif entity_type == 'credit_card':
-                redacted_text = re.sub(pattern, '___', redacted_text)  
+                redacted_text = re.sub(pattern, '[CREDIT_CARD_REDACTED]', redacted_text)
             else:
                 # HINT: Use f-string to create dynamic redaction message
-                redacted_text = re.sub(pattern, f'[{___}_REDACTED]', redacted_text)
+                redacted_text = re.sub(pattern, f'[{entity_type.upper()}_REDACTED]', redacted_text)
         
         return redacted_text

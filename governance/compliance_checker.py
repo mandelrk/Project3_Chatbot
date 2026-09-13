@@ -13,7 +13,7 @@ class ComplianceChecker:
     
     def __init__(self):
         # HINT: Initialize PII detector
-        self.pii_detector = ___()  # HINT: PIIDetector()
+        self.pii_detector = PIIDetector()
 
     def check_compliance(self, text: str, compliance_standards: List[str] = None, industry: str = "travel") -> Dict[str, Any]:
         """
@@ -28,30 +28,30 @@ class ComplianceChecker:
         """
         compliance_standards = compliance_standards or []
         violations = []
-        is_compliant = ___ 
+        is_compliant = True
         
         # HINT: Check for PII using Guardrail PII Detector
-        pii_result = self.pii_detector.___(text)
+        pii_result = self.pii_detector.detect(text)
         
         detected_pii = []
-        if pii_result['___']:
-            for entity in pii_result['___']:
-                detected_pii.append(f"{entity['___']}: {entity['___']}")
+        if pii_result['has_pii']:
+            for entity in pii_result['entities']:
+                detected_pii.append(f"{entity['type']}: {entity['value']}")
         
         if detected_pii:
             # HINT: Add PII violation message (limit to first 5)
-            violations.append(f"PII Detected: {', '.join(detected_pii[:___])}...")
+            violations.append(f"PII Detected: {', '.join(detected_pii[:5])}...")
             
             # HINT: If strict compliance needed (GDPR or HIPAA), mark as non-compliant
-            if "___" in compliance_standards or "___" in compliance_standards:
-                is_compliant = ___ 
+            if "GDPR" in compliance_standards or "HIPAA" in compliance_standards:
+                is_compliant = False
         
         # HINT: Determine remediation action
-        remediation = ___ if detected_pii else ___ 
+        remediation = "Remove or redact the detected PII." if detected_pii else "No action required."
         
         return {
-            'compliant': ___,  
-            'violations': ___,  
-            'remediation': ___,  
-            'detected_pii_count': pii_result['___']
+            'compliant': is_compliant,
+            'violations': violations,
+            'remediation': remediation,
+            'detected_pii_count': pii_result['count']
         }

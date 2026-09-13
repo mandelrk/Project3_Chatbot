@@ -16,14 +16,14 @@ class ContentSafety:
     def __init__(self):
         # HINT: Define unsafe keyword patterns for different categories
         self.unsafe_patterns = {
-            'violence': ___,  # HINT: List of violence-related keywords like ['kill', 'attack', etc.]
-            'hate_speech': ___,  # HINT: List of hate speech keywords like
-            'profanity': ___,  # HINT: List of profanity keywords
-            'personal_attack': ___  # HINT: List of personal attack keywords like
+            'violence': ['kill', 'attack', 'bomb', 'shoot'],
+            'hate_speech': ['racist slur', 'hate speech'],
+            'profanity': ['damn', 'hell'],
+            'personal_attack': ['idiot', 'stupid', ' moron']
         }
         
         # HINT: Define travel-specific red flags
-        self.travel_red_flags = ___  # HINT: List like ['fraud', 'fake booking', 'scam', etc.]
+        self.travel_red_flags = ['fraud', 'fake booking', 'scam']
     
     def check(self, text: str) -> Dict:
         """
@@ -36,32 +36,32 @@ class ContentSafety:
         4. Check text against travel_red_flags
         5. Return dict with is_safe, flags, severity
         """
-        text_lower = text.___()  # HINT: .lower()
+        text_lower = text.lower()
         flags = []
         
         # HINT: Check general unsafe patterns
-        for category, keywords in self.unsafe_patterns.___(): 
+        for category, keywords in self.unsafe_patterns.items():
             for keyword in keywords:
-                if keyword in ___:  
+                if keyword in text_lower:
                     flags.append({
-                        'category': ___,
-                        'keyword': ___,   
-                        'severity': '___' # HINT: 'high' for violence/hate speech, 'medium' for profanity, 'low' for personal attack
+                        'category': category,
+                        'keyword': keyword,
+                        'severity': 'high' if category in ('violence', 'hate_speech') else 'medium'
                     })
         
         # HINT: Check travel-specific red flags
-        for red_flag in self.___: 
+        for red_flag in self.travel_red_flags:
             if red_flag in text_lower:
                 flags.append({
-                    'category': '___', 
-                    'keyword': ___,  
-                    'severity': '___' 
+                    'category': 'travel_fraud',
+                    'keyword': red_flag,
+                    'severity': 'medium'
                 })
         
         return {
-            'is_safe': ___, 
-            'flags': ___,    
-            'severity': ___  
+            'is_safe': len(flags) == 0,
+            'flags': flags,
+            'severity': 'high' if any(flag['severity'] == 'high' for flag in flags) else ('medium' if flags else 'none')
         }
     
     def get_safety_score(self, text: str) -> float:
@@ -70,11 +70,11 @@ class ContentSafety:
         
         HINT: Return 1.0 if safe, otherwise reduce by 0.2 per flag (minimum 0.0)
         """
-        result = self.___(text) 
+        result = self.check(text)
         
-        if result['___']:  
-            return ___ 
+        if result['is_safe']:
+            return 1.0
         
         # HINT: Reduce score based on violations
-        penalty = ___ * len(result['flags'])  
-        return max(___, 1.0 - penalty) 
+        penalty = 0.2 * len(result['flags'])
+        return max(0.0, 1.0 - penalty)
