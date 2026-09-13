@@ -16,10 +16,6 @@ import pandas as pd
 from pathlib import Path
 from typing import List, Dict
 
-from ragas import evaluate
-from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
-from datasets import Dataset
-
 from src.search_engine import TravelSearchEngine
 from src.config import Config
 
@@ -33,8 +29,8 @@ class TravelChatbotEvaluator:
     
     def __init__(self):
         # HINT: Initialize search engine and golden dataset path
-        self.engine = ___() 
-        self.golden_dataset_path = Path("___") / "___"  # HINT: "data", "golden_dataset.json"
+        self.engine = TravelSearchEngine()
+        self.golden_dataset_path = Path("data") / "golden_dataset.json"
     
     def load_golden_dataset(self) -> List[Dict]:
         """
@@ -42,13 +38,13 @@ class TravelChatbotEvaluator:
         
         HINT: Check if file exists, if not create sample dataset
         """
-        if not self.golden_dataset_path.___(): 
+        if not self.golden_dataset_path.exists():
             logger.warning(f"Golden dataset not found at {self.golden_dataset_path}")
             logger.info("Creating sample golden dataset...")
-            return self.___()  
+            return self._create_sample_dataset()
         
-        with open(self.golden_dataset_path, '___') as f: 
-            return json.___(f)  
+        with open(self.golden_dataset_path, "r", encoding="utf-8") as f:
+            return json.load(f)
     
     def _create_sample_dataset(self) -> List[Dict]:
         """
@@ -59,31 +55,31 @@ class TravelChatbotEvaluator:
         """
         sample_data = [
             {
-                "question": "___",  # HINT: "What are the baggage allowance rules for international flights?"
-                "ground_truth": "___"  # HINT: Appropriate ground truth answer
+                "question": "What are the baggage allowance rules for international flights?",
+                "ground_truth": "The baggage allowance depends on the route and fare; consult the applicable airline policy."
             },
             {
-                "question": "___",  # HINT: "What is Air India's cancellation policy?"
-                "ground_truth": "___"  # HINT: Appropriate ground truth answer
+                "question": "What is Air India's cancellation policy?",
+                "ground_truth": "Cancellation charges and refund eligibility depend on the fare and applicable Air India policy."
             },
             {
-                "question": "___",  # HINT: "Do I need a visa to travel from India to UK?"
-                "ground_truth": "___"  # HINT: Appropriate ground truth answer
+                "question": "Do I need a visa to travel from India to UK?",
+                "ground_truth": "Visa requirements depend on the traveler's nationality, destination, and immigration rules."
             },
             {
-                "question": "___",  # HINT: "What are the refund policies for flight cancellations?"
-                "ground_truth": "___"  # HINT: Appropriate ground truth answer
+                "question": "What are the refund policies for flight cancellations?",
+                "ground_truth": "Refund eligibility and timing depend on the cancellation reason, fare conditions, and applicable regulations."
             },
             {
-                "question": "___",  # HINT: "What documents do I need for international travel?"
-                "ground_truth": "___"  # HINT: Appropriate ground truth answer
+                "question": "What documents do I need for international travel?",
+                "ground_truth": "International travel commonly requires a valid passport and any visa or entry documents required by the destination."
             }
         ]
         
         # HINT: Save sample dataset
         self.golden_dataset_path.parent.mkdir(exist_ok=True)
-        with open(self.golden_dataset_path, '___') as f:  
-            json.___(sample_data, f, indent=2)
+        with open(self.golden_dataset_path, "w", encoding="utf-8") as f:
+            json.dump(sample_data, f, indent=2)
         
         logger.info(f"Sample golden dataset saved to {self.golden_dataset_path}")
         return sample_data
@@ -106,20 +102,20 @@ class TravelChatbotEvaluator:
             
             try:
                 # HINT: Search for relevant documents
-                docs, _ = self.engine.___(question, k=___) 
+                docs, _ = self.engine.search_by_text(question, k=5)
                 
                 # HINT: Generate answer
-                answer = self.engine.___(docs, question)
+                answer = self.engine.synthesize_response(docs, question)
                 
                 # HINT: Collect contexts (retrieved documents)
-                context_texts = [doc.___ for doc in docs]
+                context_texts = [doc.page_content for doc in docs]
                 
-                answers.___(answer)
-                contexts.append(___) 
+                answers.append(answer)
+                contexts.append(context_texts)
                 
             except Exception as e:
                 logger.error(f"Error generating answer for '{question}': {e}")
-                answers.append("___") 
+                answers.append("Unable to generate an answer.")
                 contexts.append([])
         
         return answers, contexts
@@ -138,9 +134,22 @@ class TravelChatbotEvaluator:
         logger.info("=" * 70)
         logger.info("Starting Ragas Evaluation...")
         logger.info("=" * 70)
+
+        try:
+            from datasets import Dataset
+            from ragas import evaluate
+            from ragas.metrics import (
+                answer_relevancy,
+                context_precision,
+                context_recall,
+                faithfulness,
+            )
+        except ImportError as error:
+            logger.error("RAGAS dependencies are unavailable: %s", error)
+            return None
         
         # HINT: Load golden dataset
-        golden_data = self.___()  
+        golden_data = self.load_golden_dataset()
         
         if not golden_data:
             logger.error("No evaluation data available")
@@ -149,23 +158,23 @@ class TravelChatbotEvaluator:
         logger.info(f"Loaded {len(golden_data)} test cases")
         
         # HINT: Extract questions and ground truths
-        questions = [item["___"] for item in golden_data] 
-        ground_truths = [[item["___"]] for item in golden_data] 
+        questions = [item["question"] for item in golden_data]
+        ground_truths = [item["ground_truth"] for item in golden_data]
         
         # HINT: Generate answers and contexts
         logger.info("\nGenerating responses...")
-        answers, contexts = self.___(questions) 
+        answers, contexts = self.generate_responses(questions)
         
         # HINT: Prepare dataset for Ragas
         dataset_dict = {
-            "question": ___,  
-            "answer": ___,   
-            "contexts": ___,  
-            "ground_truth": ___  
+            "question": questions,
+            "answer": answers,
+            "contexts": contexts,
+            "ground_truth": ground_truths
         }
         
         # HINT: Create HuggingFace Dataset
-        hf_dataset = Dataset.___(dataset_dict) 
+        hf_dataset = Dataset.from_dict(dataset_dict)
         
         logger.info("\nRunning Ragas metrics...")
         logger.info("Metrics: faithfulness, answer_relevancy, context_precision, context_recall")
@@ -175,10 +184,10 @@ class TravelChatbotEvaluator:
             results = evaluate(
                 hf_dataset,
                 metrics=[
-                    ___,  # HINT: faithfulness
-                    ___,  # HINT: answer_relevancy
-                    ___,  # HINT: context_precision
-                    ___   # HINT: context_recall
+                    faithfulness,
+                    answer_relevancy,
+                    context_precision,
+                    context_recall
                 ],
             )
             
@@ -186,14 +195,14 @@ class TravelChatbotEvaluator:
             logger.info("EVALUATION RESULTS")
             logger.info("=" * 70)
             logger.info(f"\nRagas Scores:")
-            logger.info(f"  Faithfulness:       {results['___']:.4f}")  
-            logger.info(f"  Answer Relevancy:   {results['___']:.4f}")   
-            logger.info(f"  Context Precision:  {results['___']:.4f}") 
-            logger.info(f"  Context Recall:     {results['___']:.4f}")  
+            logger.info(f"  Faithfulness:       {results['faithfulness']:.4f}")
+            logger.info(f"  Answer Relevancy:   {results['answer_relevancy']:.4f}")
+            logger.info(f"  Context Precision:  {results['context_precision']:.4f}")
+            logger.info(f"  Context Recall:     {results['context_recall']:.4f}")
             logger.info("=" * 70)
             
             # HINT: Save detailed results
-            self.___(results, dataset_dict)  # HINT: _save_results
+            self._save_results(results, dataset_dict)
             
             return results
             
@@ -208,27 +217,38 @@ class TravelChatbotEvaluator:
         
         HINT: Save summary JSON and detailed CSV
         """
-        output_dir = Path("___")  # HINT: "reports"
+        output_dir = Path("reports")
         output_dir.mkdir(exist_ok=True)
+
+        thresholds = {
+            "faithfulness": 0.70,
+            "answer_relevancy": 0.70,
+            "context_precision": 0.70,
+            "context_recall": 0.70,
+        }
+        scores = {
+            metric: float(results.get(metric, 0.0))
+            for metric in thresholds
+        }
+        passed = all(scores[metric] >= threshold for metric, threshold in thresholds.items())
         
         # HINT: Save summary
         summary = {
-            "faithfulness": float(results.get('___', 0)),  # HINT: 'faithfulness'
-            "answer_relevancy": float(results.get('___', 0)),  # HINT: 'answer_relevancy'
-            "context_precision": float(results.get('___', 0)),  # HINT: 'context_precision'
-            "context_recall": float(results.get('___', 0)),  # HINT: 'context_recall'
+            **scores,
+            "thresholds": thresholds,
+            "passed": passed,
             "total_test_cases": len(dataset_dict["question"])
         }
         
-        summary_path = output_dir / "___"  # HINT: "evaluation_summary.json"
-        with open(summary_path, '___') as f:  # HINT: 'w'
-            json.___(summary, f, indent=2)  # HINT: dump
+        summary_path = output_dir / "evaluation_summary.json"
+        with open(summary_path, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2)
         
         logger.info(f"\n✅ Evaluation summary saved to {summary_path}")
         
         # HINT: Save detailed results
-        detailed_df = pd.DataFrame(___)  # HINT: dataset_dict
-        detailed_path = output_dir / "___"  # HINT: "evaluation_detailed.csv"
+        detailed_df = pd.DataFrame(dataset_dict)
+        detailed_path = output_dir / "evaluation_detailed.csv"
         detailed_df.to_csv(detailed_path, index=False)
         
         logger.info(f"✅ Detailed results saved to {detailed_path}")
@@ -237,7 +257,10 @@ class TravelChatbotEvaluator:
         """Run evaluation (sync wrapper)"""
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        return loop.run_until_complete(self.___())
+        try:
+            return loop.run_until_complete(self.run_ragas_evaluation())
+        finally:
+            loop.close()
 
 
 def run_evaluation():
@@ -246,17 +269,17 @@ def run_evaluation():
     
     HINT: Run evaluator and check if results pass thresholds
     """
-    evaluator = ___()  
-    results = evaluator.___() 
+    evaluator = TravelChatbotEvaluator()
+    results = evaluator.run()
     
     if results:
         # HINT: Check if evaluation passes minimum thresholds
-        min_faithfulness = ___  
-        min_relevancy = ___ 
+        min_faithfulness = 0.70
+        min_relevancy = 0.70
         
         passed = (
-            results.get('___', 0) >= min_faithfulness and  
-            results.get('___', 0) >= min_relevancy 
+            results.get('faithfulness', 0) >= min_faithfulness and
+            results.get('answer_relevancy', 0) >= min_relevancy
         )
         
         if passed:
