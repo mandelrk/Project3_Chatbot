@@ -19,10 +19,10 @@ import src.monitoring  # Enable MLflow/Azure Monitor
 import time
 
 # HINT: Set page config with title and layout
-st.set_page_config(page_title="___", layout="___")  # HINT: "WanderNest Travels - AI Assistant", "wide"
+st.set_page_config(page_title="Wanderlust Travels - AI Assistant", layout="wide")
 
-st.title("___")  
-st.markdown("___")  # HINT: "Get instant answers about flights, hotels, policies, and travel requirements."
+st.title("Wanderlust Travels AI Assistant")
+st.markdown("Get instant answers about flights, hotels, policies, and travel requirements.")
 
 # ====================
 # Initialize Engine
@@ -35,7 +35,7 @@ def get_engine():
     HINT: Try to return TravelSearchEngine(), handle exceptions
     """
     try:
-        return ___() 
+        return TravelSearchEngine()
     except Exception as e:
         st.error(f"Failed to initialize search engine: {e}")
         return None
@@ -49,30 +49,31 @@ def display_results(results, query_text, generated_response):
     2. Display AI response in container
     3. Show source documents in expander
     """
-    st.success(f"Found {___} relevant documents.")  
+    st.success(f"Found {len(results)} relevant documents.")
     
     # HINT: Show AI Response
-    st.subheader("___")  
+    st.subheader("Answer")
     with st.container():
-        st.markdown(___)  
+        st.markdown(generated_response)
     
     # HINT: Show Sources
     if results:
-        with st.expander("___"):  # HINT: "📚 View Source Documents"
+        with st.expander("📚 View Source Documents"):
             for i, doc in enumerate(results):
                 with st.container():
-                    st.markdown(f"**{i+1}. Source: {doc.metadata.get('___', 'Unknown')}**") 
-                    st.markdown(f"*Category: {doc.metadata.get('___', 'N/A')}*")  
-                    st.write(doc.___[:400] + "...")  # HINT: page_content
+                    st.markdown(f"**{i + 1}. Source: {doc.metadata.get('source', 'Unknown')}**")
+                    st.markdown(f"*Category: {doc.metadata.get('category', 'N/A')}*")
+                    preview = doc.page_content[:400]
+                    st.write(preview + ("..." if len(doc.page_content) > 400 else ""))
                     st.divider()
     else:
-        st.warning("___")  
+        st.warning("No source documents were returned for this question.")
 
 # HINT: Get engine instance
-engine = ___()  # HINT: get_engine()
+engine = get_engine()
 
 # HINT: Cache clear option (for debugging)
-if st.sidebar.button("___"): 
+if st.sidebar.button("Clear cached engine"):
     st.cache_resource.clear()
     st.rerun()
 
@@ -80,7 +81,7 @@ if st.sidebar.button("___"):
 # Sidebar
 # ====================
 with st.sidebar:
-    st.header("___") 
+    st.header("About this assistant")
     st.info("""
     **Wanderlust Travels AI Assistant**
     
@@ -96,27 +97,27 @@ with st.sidebar:
     
     st.divider()
     
-    st.header("___")  # HINT: "📊 Statistics"
+    st.header("📊 Statistics")
     if 'query_count' not in st.session_state:
-        st.session_state.query_count = ___  
-    st.metric("Total Queries", st.session_state.___) 
+        st.session_state.query_count = 0
+    st.metric("Total Queries", st.session_state.query_count)
 
 # ====================
 # Main Search Interface
 # ====================
-st.markdown("### ___")  # HINT: "🔍 Ask Your Travel Questions"
+st.markdown("### 🔍 Ask Your Travel Questions")
 
 # HINT: Example questions in 3 columns
 col1, col2, col3 = st.columns(3)
 with col1:
-    if st.button("___"):  # HINT: "✈️ Baggage Rules"
-        st.session_state.example_query = "___"  # HINT: "What are the baggage allowance rules for international flights?"
+    if st.button("✈️ Baggage Rules"):
+        st.session_state.example_query = "What are the baggage allowance rules for international flights?"
 with col2:
-    if st.button("___"):  # HINT: "📋 Visa Info"
-        st.session_state.example_query = "___"  # HINT: "Do I need a visa to travel from India to UK?"
+    if st.button("📋 Visa Info"):
+        st.session_state.example_query = "Do I need a visa to travel from India to UK?"
 with col3:
-    if st.button("___"):  # HINT: "🎫 Cancellation Policy"
-        st.session_state.example_query = "___"  # HINT: "What is the cancellation policy for Air India flights?"
+    if st.button("🎫 Cancellation Policy"):
+        st.session_state.example_query = "What is the cancellation policy for Air India flights?"
 
 st.divider()
 
@@ -127,28 +128,28 @@ if 'example_query' in st.session_state:
 else:
     query_text = st.text_input(
         "Enter your travel question",
-        placeholder="___",  # HINT: "e.g., 'What are the baggage rules for BLR to LON?'"
+        placeholder="e.g., 'What are the baggage rules for BLR to LON?'",
         label_visibility="collapsed"
     )
 
-search_button = st.button("___", use_container_width=True, type="primary")  # HINT: "🔍 Search"
+search_button = st.button("🔍 Search", use_container_width=True, type="primary")
 
 # ====================
 # Search Logic
 # ====================
 if search_button and engine and query_text:
-    st.session_state.query_count += ___  
+    st.session_state.query_count += 1
     
     st.markdown("---")
-    with st.spinner("___"):  # HINT: "🔍 Searching travel knowledge base..."
+    with st.spinner("🔍 Searching travel knowledge base..."):
         start_time = time.time()
         
         try:
             # HINT: Search for relevant documents
-            results, processed_query = engine.___(query_text, k=___) 
+            results, processed_query = engine.search_by_text(query_text, k=5)
             
             # HINT: Generate AI response
-            generated_response = engine.___(results, query_text)
+            generated_response = engine.synthesize_response(results, query_text)
             
             latency = time.time() - start_time
             st.info(f"✅ Search completed in {latency:.2f}s")
@@ -157,7 +158,7 @@ if search_button and engine and query_text:
             
         except Exception as e:
             st.error(f"❌ Error: {str(e)}")
-            st.info("___")  # HINT: "Please try rephrasing your question or contact support."
+            st.info("Please try rephrasing your question or contact support.")
 
 elif search_button and not query_text:
-    st.warning("___")  # HINT: "⚠️ Please enter a travel question."
+    st.warning("⚠️ Please enter a travel question.")
