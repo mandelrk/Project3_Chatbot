@@ -1,9 +1,0 @@
-Air India’s waiver says a domestic-only flight (not connected to an international itinerary) must be rescheduled by more than 1 hour to qualify for the waiver that allows a full refund.
-
-If you need to process the refund, follow the policy steps:
-- Cancellation charge is waived.  
-- Add the OSI/coupon remark for the cancelled flight: e.g. "OSI: AI CANCEL / AI ### / DDMMYY" (replace ### and date).  
-- Ensure the entire booking/PNR is cancelled to avail full refund.  
-- Agent can then process the refund through the GDS.
-
-If your itinerary includes an international segment, different rules may apply. If you’d like, tell me your booking details and I can help confirm eligibility and the exact steps.
