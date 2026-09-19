@@ -147,115 +147,273 @@ TASK: Implement RAG search engine with governance integration
             
 # #             return response
 # 
-import mlflow
+# import mlflow
+# from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
+# from src.config import Config
+# from governance.governance_gate import GovernanceGate
+# from src.vector_store import get_vector_store
+
+# class TravelSearchEngine:
+#     """RAG-powered search engine for travel queries"""
+    
+#     def __init__(self):
+#         """
+#         Initialize search engine components
+#         """
+#         # Initialize governance gate
+#         self.governance_gate = GovernanceGate() 
+        
+#         # Initialize Azure Chat OpenAI LLM
+#         self.llm = AzureChatOpenAI(
+#             api_key=Config.AZURE_OPENAI_API_KEY,
+#             azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+#             api_version=getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),
+#             azure_deployment=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
+#         )
+        
+#         # Initialize Azure OpenAI Embeddings
+#         self.embeddings = AzureOpenAIEmbeddings(
+#             api_key=Config.AZURE_OPENAI_API_KEY,  
+#             azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,  
+#             azure_deployment=getattr(Config, "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", Config.AZURE_OPENAI_DEPLOYMENT_NAME),  
+#             api_version=getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),  
+#         )
+        
+#         # Initialize Vector Store using get_vector_store function
+#         self.vector_store = get_vector_store(self.embeddings) 
+    
+#     def search_by_text(self, query_text: str, k: int = 5):
+#         """
+#         Search for travel information using a text query
+#         """
+        
+#         # Set MLflow experiment name from Config
+#         mlflow.set_experiment(getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag"))  
+        
+#         with mlflow.start_run(run_name="search_travel_info"):
+#             print(f"DEBUG: Text Query: {query_text}")
+            
+#             # Validate input using governance gate
+#             gov_check = self.governance_gate.validate_input(query_text)
+            
+#             if not gov_check['passed']:  
+#                 # Log governance failure event via tags/params
+#                 mlflow.set_tag("governance_status", "FAILED")
+#                 mlflow.log_param("violations", str(gov_check['violations'])) 
+#                 return [], "Query blocked by security checks."
+
+#             # Log parameters to MLflow
+#             mlflow.log_param("k", k)  
+#             mlflow.log_param("query_text", query_text)  
+            
+#             # Perform similarity search on vector store
+#             docs = self.vector_store.similarity_search(query_text, k=k) 
+            
+#             # Log metric for number of results
+#             mlflow.log_metric("results_count", len(docs))
+            
+#             return docs, query_text
+
+#     def synthesize_response(self, docs, user_query):
+#         """
+#         Generate a conversational response based on retrieved documents
+#         """
+        
+#         mlflow.set_experiment(getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag"))
+        
+#         with mlflow.start_run(run_name="synthesize_response"):
+#             # Handle case when no documents found
+#             if not docs:
+#                 return "I couldn't find any relevant information in our knowledge base to answer your query." 
+            
+#             # Build context from documents
+#             context = "\n".join([
+#                 f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})" 
+#                 for doc in docs
+#             ])
+            
+#             # Create prompt for LLM
+#             prompt = f"""
+#             You are a helpful travel assistant for Wanderlust Travels, an online travel agency.
+#             Use the following information from our knowledge base to answer the customer's question.
+            
+#             Knowledge Base Information:
+#             {context}
+            
+#             Customer Question: "{user_query}"
+            
+#             Please provide a clear, helpful, and accurate answer based on the information above.
+#             If the information is not sufficient, let the customer know and provide general guidance.
+#             """  
+            
+#             # Generate response using LLM
+#             response = self.llm.invoke(prompt).content  
+            
+#             # Validate output using governance gate
+#             gov_check = self.governance_gate.validate_output(response) 
+            
+#             if not gov_check['passed']:  
+#                 return "I generated a response but it didn't pass safety checks. Please rephrase your question."  
+            
+#             # Log response to MLflow as text file
+#             mlflow.log_text(response, "final_response.txt")
+            
+#             return response
+
+
 from langchain_openai import AzureChatOpenAI, AzureOpenAIEmbeddings
 from src.config import Config
 from governance.governance_gate import GovernanceGate
 from src.vector_store import get_vector_store
 
+# MLflow is optional
+if Config.USE_MLFLOW:
+    import mlflow
+else:
+    mlflow = None
+
+
 class TravelSearchEngine:
     """RAG-powered search engine for travel queries"""
-    
+
     def __init__(self):
-        """
-        Initialize search engine components
-        """
-        # Initialize governance gate
-        self.governance_gate = GovernanceGate() 
-        
-        # Initialize Azure Chat OpenAI LLM
+        """Initialize search engine components"""
+
+        # Governance gate
+        self.governance_gate = GovernanceGate()
+
+        # Azure Chat OpenAI LLM
         self.llm = AzureChatOpenAI(
             api_key=Config.AZURE_OPENAI_API_KEY,
             azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
             api_version=getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),
             azure_deployment=Config.AZURE_OPENAI_DEPLOYMENT_NAME,
         )
-        
-        # Initialize Azure OpenAI Embeddings
-        self.embeddings = AzureOpenAIEmbeddings(
-            api_key=Config.AZURE_OPENAI_API_KEY,  
-            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,  
-            azure_deployment=getattr(Config, "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", Config.AZURE_OPENAI_DEPLOYMENT_NAME),  
-            api_version=getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),  
-        )
-        
-        # Initialize Vector Store using get_vector_store function
-        self.vector_store = get_vector_store(self.embeddings) 
-    
-    def search_by_text(self, query_text: str, k: int = 5):
-        """
-        Search for travel information using a text query
-        """
-        
-        # Set MLflow experiment name from Config
-        mlflow.set_experiment(getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag"))  
-        
-        with mlflow.start_run(run_name="search_travel_info"):
-            print(f"DEBUG: Text Query: {query_text}")
-            
-            # Validate input using governance gate
-            gov_check = self.governance_gate.validate_input(query_text)
-            
-            if not gov_check['passed']:  
-                # Log governance failure event via tags/params
-                mlflow.set_tag("governance_status", "FAILED")
-                mlflow.log_param("violations", str(gov_check['violations'])) 
-                return [], "Query blocked by security checks."
 
-            # Log parameters to MLflow
-            mlflow.log_param("k", k)  
-            mlflow.log_param("query_text", query_text)  
-            
-            # Perform similarity search on vector store
-            docs = self.vector_store.similarity_search(query_text, k=k) 
-            
-            # Log metric for number of results
-            mlflow.log_metric("results_count", len(docs))
-            
-            return docs, query_text
+        # Azure OpenAI Embeddings
+        self.embeddings = AzureOpenAIEmbeddings(
+            api_key=Config.AZURE_OPENAI_API_KEY,
+            azure_endpoint=Config.AZURE_OPENAI_ENDPOINT,
+            azure_deployment=getattr(Config, "AZURE_OPENAI_EMBEDDING_DEPLOYMENT", Config.AZURE_OPENAI_DEPLOYMENT_NAME),
+            api_version=getattr(Config, "AZURE_OPENAI_API_VERSION", "2024-12-01-preview"),
+        )
+
+        # Vector Store
+        self.vector_store = get_vector_store(self.embeddings)
+
+    def _safe_mlflow_start(self, run_name):
+        """Start MLflow run only if enabled."""
+        if Config.USE_MLFLOW and mlflow is not None:
+            try:
+                mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
+                mlflow.start_run(run_name=run_name)
+                return True
+            except Exception as e:
+                print(f"[MLflow disabled] {e}")
+        return False
+
+    def _safe_mlflow_end(self):
+        """End MLflow run only if enabled."""
+        if Config.USE_MLFLOW and mlflow is not None:
+            try:
+                mlflow.end_run()
+            except Exception:
+                pass
+
+    def _safe_log_param(self, key, value):
+        if Config.USE_MLFLOW and mlflow is not None:
+            try:
+                mlflow.log_param(key, value)
+            except Exception:
+                pass
+
+    def _safe_log_metric(self, key, value):
+        if Config.USE_MLFLOW and mlflow is not None:
+            try:
+                mlflow.log_metric(key, value)
+            except Exception:
+                pass
+
+    def _safe_log_text(self, text, filename):
+        if Config.USE_MLFLOW and mlflow is not None:
+            try:
+                mlflow.log_text(text, filename)
+            except Exception:
+                pass
+
+    def search_by_text(self, query_text: str, k: int = 5):
+        """Search for travel information using a text query"""
+
+        mlflow_active = self._safe_mlflow_start("search_travel_info")
+
+        print(f"DEBUG: Text Query: {query_text}")
+
+        # Governance validation
+        gov_check = self.governance_gate.validate_input(query_text)
+
+        if not gov_check['passed']:
+            if mlflow_active:
+                self._safe_log_param("violations", str(gov_check['violations']))
+                self._safe_log_param("governance_status", "FAILED")
+                self._safe_mlflow_end()
+            return [], "Query blocked by security checks."
+
+        # Log parameters
+        if mlflow_active:
+            self._safe_log_param("k", k)
+            self._safe_log_param("query_text", query_text)
+
+        # Perform similarity search
+        docs = self.vector_store.similarity_search(query_text, k=k)
+
+        # Log metric
+        if mlflow_active:
+            self._safe_log_metric("results_count", len(docs))
+            self._safe_mlflow_end()
+
+        return docs, query_text
 
     def synthesize_response(self, docs, user_query):
+        """Generate a conversational response based on retrieved documents"""
+
+        mlflow_active = self._safe_mlflow_start("synthesize_response")
+
+        if not docs:
+            if mlflow_active:
+                self._safe_mlflow_end()
+            return "I couldn't find any relevant information in our knowledge base to answer your query."
+
+        # Build context
+        context = "\n".join([
+            f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})"
+            for doc in docs
+        ])
+
+        # Prompt
+        prompt = f"""
+        You are a helpful travel assistant for Wanderlust Travels.
+        Use the following information to answer the customer's question.
+
+        Knowledge Base:
+        {context}
+
+        Customer Question: "{user_query}"
         """
-        Generate a conversational response based on retrieved documents
-        """
-        
-        mlflow.set_experiment(getattr(Config, "MLFLOW_EXPERIMENT_NAME", "travel-search-rag"))
-        
-        with mlflow.start_run(run_name="synthesize_response"):
-            # Handle case when no documents found
-            if not docs:
-                return "I couldn't find any relevant information in our knowledge base to answer your query." 
-            
-            # Build context from documents
-            context = "\n".join([
-                f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})" 
-                for doc in docs
-            ])
-            
-            # Create prompt for LLM
-            prompt = f"""
-            You are a helpful travel assistant for Wanderlust Travels, an online travel agency.
-            Use the following information from our knowledge base to answer the customer's question.
-            
-            Knowledge Base Information:
-            {context}
-            
-            Customer Question: "{user_query}"
-            
-            Please provide a clear, helpful, and accurate answer based on the information above.
-            If the information is not sufficient, let the customer know and provide general guidance.
-            """  
-            
-            # Generate response using LLM
-            response = self.llm.invoke(prompt).content  
-            
-            # Validate output using governance gate
-            gov_check = self.governance_gate.validate_output(response) 
-            
-            if not gov_check['passed']:  
-                return "I generated a response but it didn't pass safety checks. Please rephrase your question."  
-            
-            # Log response to MLflow as text file
-            mlflow.log_text(response, "final_response.txt")
-            
-            return response
+
+        # Generate response
+        response = self.llm.invoke(prompt).content
+
+        # Governance validation
+        gov_check = self.governance_gate.validate_output(response)
+
+        if not gov_check['passed']:
+            if mlflow_active:
+                self._safe_mlflow_end()
+            return "I generated a response but it didn't pass safety checks. Please rephrase your question."
+
+        # Log response
+        if mlflow_active:
+            self._safe_log_text(response, "final_response.txt")
+            self._safe_mlflow_end()
+
+        return response
