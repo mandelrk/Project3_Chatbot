@@ -64,11 +64,70 @@ TASK: Load all configuration from environment variables
 #     # HINT: Convert to integer, 0 means no limit
 #     INGESTION_LIMIT = int(os.getenv("___", "___"))  # HINT: "INGESTION_LIMIT", "0"
 
+# import os
+# from dotenv import load_dotenv
+
+# # HINT: Load environment variables from .env file
+# load_dotenv()  # HINT: load_dotenv()
+
+# class Config:
+#     """Configuration for Wanderlust Travel Chatbot"""
+    
+#     # ====================
+#     # Azure OpenAI Configuration
+#     # ====================
+#     # HINT: Load Azure OpenAI credentials from environment
+#     AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY") 
+#     AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT") 
+#     AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")  
+#     AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")  
+#     AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-3-small") 
+    
+#     # ====================
+#     # Azure AI Search Configuration (Only vector store - no ChromaDB)
+#     # ====================
+#     # HINT: Load Azure AI Search credentials
+#     AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT") 
+#     AZURE_SEARCH_KEY = os.getenv("AZURE_SEARCH_KEY") 
+#     AZURE_SEARCH_INDEX_NAME = os.getenv("AZURE_SEARCH_INDEX_NAME", "travel-kb-index")  # HINT: "AZURE_SEARCH_INDEX_NAME", "travel-kb-index"
+    
+#     # Vector store type required by test_config.py
+#     VECTOR_STORE_TYPE = os.getenv("VECTOR_STORE_TYPE", "azure_search")
+
+#     # ====================
+#     # Azure Storage (Optional)
+#     # ====================
+#     AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")  
+#     AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME", "travel-documents")  # HINT: "AZURE_STORAGE_CONTAINER_NAME", "travel-documents"
+    
+#     # ====================
+#     # Azure Content Safety (Optional)
+#     # ====================
+#     AZURE_CONTENT_SAFETY_ENDPOINT = os.getenv("AZURE_CONTENT_SAFETY_ENDPOINT")  
+#     AZURE_CONTENT_SAFETY_KEY = os.getenv("AZURE_CONTENT_SAFETY_KEY") 
+    
+#     # ====================
+#     # Azure Monitor (Optional)
+#     # ====================
+#     APPLICATIONINSIGHTS_CONNECTION_STRING = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING") 
+    
+#     # ====================
+#     # MLflow Configuration
+#     # ====================
+#     MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")  # HINT: "MLFLOW_TRACKING_URI"
+#     MLFLOW_EXPERIMENT_NAME = os.getenv("MLFLOW_EXPERIMENT_NAME", "wanderlust-travel-chatbot")  # HINT: "MLFLOW_EXPERIMENT_NAME", "wanderlust-travel-chatbot"
+    
+#     # ====================
+#     # Ingestion Settings
+#     # ====================
+#     # HINT: Convert to integer, 0 means no limit
+#     INGESTION_LIMIT = int(os.getenv("INGESTION_LIMIT", "0"))  # HINT: "INGESTION_LIMIT", "0"
+
 import os
 from dotenv import load_dotenv
 
-# HINT: Load environment variables from .env file
-load_dotenv()  # HINT: load_dotenv()
+# Load environment variables from .env file
+load_dotenv()
 
 class Config:
     """Configuration for Wanderlust Travel Chatbot"""
@@ -76,49 +135,48 @@ class Config:
     # ====================
     # Azure OpenAI Configuration
     # ====================
-    # HINT: Load Azure OpenAI credentials from environment
-    AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY") 
-    AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT") 
-    AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")  
-    AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")  
-    AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-3-small") 
-    
+    AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+    AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+    AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-01")
+    AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4")
+    AZURE_OPENAI_EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-3-small")
+
     # ====================
-    # Azure AI Search Configuration (Only vector store - no ChromaDB)
+    # Azure AI Search Configuration
     # ====================
-    # HINT: Load Azure AI Search credentials
-    AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT") 
-    AZURE_SEARCH_KEY = os.getenv("AZURE_SEARCH_KEY") 
-    AZURE_SEARCH_INDEX_NAME = os.getenv("AZURE_SEARCH_INDEX_NAME", "travel-kb-index")  # HINT: "AZURE_SEARCH_INDEX_NAME", "travel-kb-index"
-    
-    # Vector store type required by test_config.py
+    AZURE_SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT")
+    AZURE_SEARCH_KEY = os.getenv("AZURE_SEARCH_KEY")
+    AZURE_SEARCH_INDEX_NAME = os.getenv("AZURE_SEARCH_INDEX_NAME", "travel-kb-index")
+
     VECTOR_STORE_TYPE = os.getenv("VECTOR_STORE_TYPE", "azure_search")
 
     # ====================
     # Azure Storage (Optional)
     # ====================
-    AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")  
-    AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME", "travel-documents")  # HINT: "AZURE_STORAGE_CONTAINER_NAME", "travel-documents"
-    
+    AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+    AZURE_STORAGE_CONTAINER_NAME = os.getenv("AZURE_STORAGE_CONTAINER_NAME", "travel-documents")
+
     # ====================
     # Azure Content Safety (Optional)
     # ====================
-    AZURE_CONTENT_SAFETY_ENDPOINT = os.getenv("AZURE_CONTENT_SAFETY_ENDPOINT")  
-    AZURE_CONTENT_SAFETY_KEY = os.getenv("AZURE_CONTENT_SAFETY_KEY") 
-    
+    AZURE_CONTENT_SAFETY_ENDPOINT = os.getenv("AZURE_CONTENT_SAFETY_ENDPOINT")
+    AZURE_CONTENT_SAFETY_KEY = os.getenv("AZURE_CONTENT_SAFETY_KEY")
+
     # ====================
     # Azure Monitor (Optional)
     # ====================
-    APPLICATIONINSIGHTS_CONNECTION_STRING = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING") 
-    
+    APPLICATIONINSIGHTS_CONNECTION_STRING = os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+
     # ====================
-    # MLflow Configuration
+    # MLflow Configuration (Optional)
     # ====================
-    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")  # HINT: "MLFLOW_TRACKING_URI"
-    MLFLOW_EXPERIMENT_NAME = os.getenv("MLFLOW_EXPERIMENT_NAME", "wanderlust-travel-chatbot")  # HINT: "MLFLOW_EXPERIMENT_NAME", "wanderlust-travel-chatbot"
-    
+    # MLflow is optional — only used if USE_MLFLOW=true
+    USE_MLFLOW = os.getenv("USE_MLFLOW", "false").lower() == "true"
+
+    MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "sqlite:///mlflow.db")
+    MLFLOW_EXPERIMENT_NAME = os.getenv("MLFLOW_EXPERIMENT_NAME", "wanderlust-travel-chatbot")
+
     # ====================
     # Ingestion Settings
     # ====================
-    # HINT: Convert to integer, 0 means no limit
-    INGESTION_LIMIT = int(os.getenv("INGESTION_LIMIT", "0"))  # HINT: "INGESTION_LIMIT", "0"
+    INGESTION_LIMIT = int(os.getenv("INGESTION_LIMIT", "0"))
