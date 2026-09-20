@@ -392,8 +392,8 @@ class TravelSearchEngine:
         # Prompt
         prompt = f"""
         You are a travel assistant. Use the retrieved documents below to answer the user's question.
-Your answer MUST:
 
+Your answer MUST:
 - Be directly relevant to the user's question.
 - Use information from the retrieved documents.
 - Combine and summarize information when helpful.
