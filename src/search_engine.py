@@ -341,7 +341,7 @@ class TravelSearchEngine:
             except Exception:
                 pass
 
-    def search_by_text(self, query_text: str, k: int = 5):
+    def search_by_text(self, query_text: str, k: int = 8):
         """Search for travel information using a text query"""
 
         mlflow_active = self._safe_mlflow_start("search_travel_info")
