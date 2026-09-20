@@ -391,13 +391,19 @@ class TravelSearchEngine:
 
         # Prompt
         prompt = f"""
-        You are a helpful travel assistant for Wanderlust Travels.
-        Use the following information to answer the customer's question.
+        You are a travel assistant. Answer ONLY using the information from the retrieved documents below.
+If the documents do not contain the answer, say: "The knowledge base does not contain this information."
+
+Do NOT guess.
+Do NOT add general travel advice.
+Do NOT use prior knowledge.
+Do NOT generalize.
 
         Knowledge Base:
         {context}
 
         Customer Question: "{user_query}"
+        Provide a concise, factual answer grounded ONLY in the retrieved documents.
         """
 
         # Generate response
