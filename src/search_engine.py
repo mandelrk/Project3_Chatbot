@@ -394,12 +394,12 @@ class TravelSearchEngine:
         You are a travel assistant. Use the retrieved documents below to answer the user's question.
 
 Your answer MUST:
-- Be directly relevant to the user's question.
-- Use information from the retrieved documents.
-- Combine and summarize information when helpful.
-- Avoid guessing or adding facts not supported by the documents.
-- If the documents do not contain the answer, say:
-  "The knowledge base does not contain this information."
+1. **Direct Answer** — Respond clearly and directly to the user's question.
+2. **Supporting Evidence** — Reference specific retrieved document(s) that contain the information.
+3. **Helpful Context** — Add additional details ONLY if they appear in the retrieved documents.
+4. Avoid guessing or adding unsupported facts.
+5. If the documents do not contain the answer, say:
+   "The knowledge base does not contain this information."
 
         Knowledge Base:
         {context}
