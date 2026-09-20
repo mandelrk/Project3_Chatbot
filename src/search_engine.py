@@ -391,13 +391,15 @@ class TravelSearchEngine:
 
         # Prompt
         prompt = f"""
-        You are a travel assistant. Answer ONLY using the information from the retrieved documents below.
-If the documents do not contain the answer, say: "The knowledge base does not contain this information."
+        You are a travel assistant. Use the retrieved documents below to answer the user's question.
+Your answer MUST:
 
-Do NOT guess.
-Do NOT add general travel advice.
-Do NOT use prior knowledge.
-Do NOT generalize.
+- Be directly relevant to the user's question.
+- Use information from the retrieved documents.
+- Combine and summarize information when helpful.
+- Avoid guessing or adding facts not supported by the documents.
+- If the documents do not contain the answer, say:
+  "The knowledge base does not contain this information."
 
         Knowledge Base:
         {context}
