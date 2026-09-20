@@ -401,7 +401,7 @@ Your answer MUST:
 5. If the documents do not contain the answer, say:
    "The knowledge base does not contain this information."
 
-        Knowledge Base:
+        Retrieved Documents:
         {context}
 
         Customer Question: "{user_query}"
