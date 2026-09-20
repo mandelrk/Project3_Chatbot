@@ -384,28 +384,71 @@ class TravelSearchEngine:
             return "I couldn't find any relevant information in our knowledge base to answer your query."
 
         # Build context
-        context = "\n".join([
-            f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})"
-            for doc in docs
-        ])
+        # context = "\n".join([
+        #     f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})"
+        #     for doc in docs
+        # ])
+        context = "\n\n".join([
+    f"""
+DOCUMENT {i + 1}
+SOURCE: {doc.metadata.get('source', 'Unknown')}
+
+CONTENT:
+{doc.page_content}
+"""
+    for i, doc in enumerate(docs)
+])
+
 
         # Prompt
         prompt = f"""
-        You are a travel assistant. Use the retrieved documents below to answer the user's question.
+#         You are a travel assistant. Use the retrieved documents below to answer the user's question.
 
-Your answer MUST:
-1. **Direct Answer** — Respond clearly and directly to the user's question.
-2. **Supporting Evidence** — Reference specific retrieved document(s) that contain the information.
-3. **Helpful Context** — Add additional details ONLY if they appear in the retrieved documents.
-4. Avoid guessing or adding unsupported facts.
-5. If the documents do not contain the answer, say:
-   "The knowledge base does not contain this information."
+# Your answer MUST:
+# 1. **Direct Answer** — Respond clearly and directly to the user's question.
+# 2. **Supporting Evidence** — Reference specific retrieved document(s) that contain the information.
+# 3. **Helpful Context** — Add additional details ONLY if they appear in the retrieved documents.
+# 4. Avoid guessing or adding unsupported facts.
+# 5. If the documents do not contain the answer, say:
+#    "The knowledge base does not contain this information."
 
-        Retrieved Documents:
-        {context}
+#         Retrieved Documents:
+#         {context}
 
-        Customer Question: "{user_query}"
-        Provide a concise, factual answer grounded ONLY in the retrieved documents.
+#         Customer Question: "{user_query}"
+#         Provide a concise, factual answer grounded ONLY in the retrieved documents.
+You are a knowledgeable travel assistant.
+
+Use the retrieved documents to answer the customer's question accurately and
+completely.
+
+Customer Question:
+{user_query}
+
+Retrieved Documents:
+{context}
+
+Instructions:
+
+1. Answer the customer's question directly.
+2. Make sure you address every part of the question.
+3. Use the retrieved documents to provide the relevant details needed to
+   answer the question completely.
+4. Prioritize information that directly answers the customer's question.
+5. You may combine relevant information from multiple retrieved documents.
+6. Do not include information that is unrelated to the question.
+7. Do not make up facts or use information that is not supported by the
+   retrieved documents.
+8. If the question asks for multiple items, address all of them.
+9. If the question asks for a comparison, clearly address the requested
+   differences.
+10. If the question asks for a recommendation, provide the relevant options
+    supported by the retrieved documents.
+11. If the retrieved documents do not contain enough information to answer
+    the question, say:
+    "The knowledge base does not contain this information."
+
+Provide a clear, complete, and focused answer.
         """
 
         # Generate response

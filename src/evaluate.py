@@ -103,7 +103,7 @@ class TravelChatbotEvaluator:
             
             try:
                 # HINT: Search for relevant documents
-                docs, _ = self.engine.search_by_text(question, k=5)
+                docs, _ = self.engine.search_by_text(question, k=12)
                 
                 # HINT: Generate answer
                 answer = self.engine.synthesize_response(docs, question)
