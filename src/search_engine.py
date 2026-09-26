@@ -303,13 +303,22 @@ class TravelSearchEngine:
 
     def _safe_mlflow_start(self, run_name):
         """Start MLflow run only if enabled."""
-        if Config.USE_MLFLOW and mlflow is not None:
-            try:
-                mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
-                mlflow.start_run(run_name=run_name)
-                return True
-            except Exception as e:
-                print(f"[MLflow disabled] {e}")
+        if not (Config.USE_MLFLOW and mlflow is not None):
+            return False
+
+        tracking_uri = (Config.MLFLOW_TRACKING_URI or "").lower()
+        if "localhost" in tracking_uri or "127.0.0.1" in tracking_uri:
+            print("[MLflow disabled] Localhost tracking URI detected; skipping MLflow for this environment.")
+            return False
+
+        try:
+            if Config.MLFLOW_TRACKING_URI:
+                mlflow.set_tracking_uri(Config.MLFLOW_TRACKING_URI)
+            mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
+            mlflow.start_run(run_name=run_name)
+            return True
+        except Exception as e:
+            print(f"[MLflow disabled] {e}")
         return False
 
     def _safe_mlflow_end(self):

@@ -68,11 +68,15 @@ from src.config import Config
 #     except Exception as e:
 #         print(f"Warning: Azure Monitor configuration failed: {e}")
 
-# Configure MLflow if available
-if Config.MLFLOW_TRACKING_URI:
-    try:
-        mlflow.set_tracking_uri(Config.MLFLOW_TRACKING_URI)
-        mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
-        print(f"✅ MLflow configured: {Config.MLFLOW_TRACKING_URI}")
-    except Exception as e:
-        print(f"Warning: MLflow configuration failed: {e}")
+# Configure MLflow only when explicitly enabled and the backend is reachable.
+if Config.USE_MLFLOW and Config.MLFLOW_TRACKING_URI:
+    tracking_uri = Config.MLFLOW_TRACKING_URI.lower()
+    if "localhost" in tracking_uri or "127.0.0.1" in tracking_uri:
+        print("Warning: MLflow local tracking URI detected; disabling MLflow for this environment to avoid localhost connection failures.")
+    else:
+        try:
+            mlflow.set_tracking_uri(Config.MLFLOW_TRACKING_URI)
+            mlflow.set_experiment(Config.MLFLOW_EXPERIMENT_NAME)
+            print(f"✅ MLflow configured: {Config.MLFLOW_TRACKING_URI}")
+        except Exception as e:
+            print(f"Warning: MLflow configuration failed: {e}")
