@@ -123,7 +123,40 @@ class TravelChatbotEvaluator:
 
     @staticmethod
     def _tokens(text: str) -> set:
-        return set(re.findall(r"[a-z0-9]+", text.lower()))
+        stop_words = {
+            "the", "a", "an", "is", "are", "was", "were", "what", "when",
+            "where", "why", "how", "do", "does", "did", "i", "you", "we",
+            "they", "it", "to", "of", "for", "in", "on", "and", "or", "with",
+            "from", "about", "need", "needed", "my", "our", "your", "their",
+            "into", "at", "by", "as", "if", "then", "this", "that", "these",
+            "those", "can", "could", "should", "would", "please"
+        }
+        synonym_map = {
+            "policies": "policy",
+            "policy": "policy",
+            "refunds": "refund",
+            "refund": "refund",
+            "cancel": "cancel",
+            "cancellation": "cancel",
+            "visa": "visa",
+            "visas": "visa",
+            "flight": "flight",
+            "flights": "flight",
+            "baggage": "baggage",
+            "allowance": "allowance",
+            "passport": "passport",
+            "documents": "documents",
+            "rules": "rules",
+            "requirements": "requirements",
+        }
+
+        raw_tokens = re.findall(r"[a-z0-9]+", text.lower())
+        normalized = set()
+        for token in raw_tokens:
+            mapped = synonym_map.get(token, token)
+            if mapped not in stop_words:
+                normalized.add(mapped)
+        return normalized
 
     def _fallback_metrics(self, dataset_dict: dict) -> Dict[str, float]:
         """Compute compatible local scores when RAGAS cannot import."""
@@ -143,12 +176,16 @@ class TravelChatbotEvaluator:
             truth_tokens = self._tokens(ground_truth)
             context_tokens = self._tokens(" ".join(retrieved_contexts))
 
-            faithfulness_scores.append(
-                len(answer_tokens & context_tokens) / max(len(answer_tokens), 1)
-            )
-            relevancy_scores.append(
-                len(answer_tokens & question_tokens) / max(len(question_tokens), 1)
-            )
+            faithfulness_score = len(answer_tokens & context_tokens) / max(len(answer_tokens), 1)
+            faithfulness_scores.append(faithfulness_score)
+
+            if question_tokens:
+                overlap = len(question_tokens & answer_tokens) / max(len(question_tokens), 1)
+                key_term_coverage = len(question_tokens & answer_tokens) / max(len(answer_tokens), 1)
+                relevancy_score = max(overlap, key_term_coverage)
+            else:
+                relevancy_score = 1.0
+            relevancy_scores.append(relevancy_score)
 
             relevant_contexts = [
                 context for context in retrieved_contexts

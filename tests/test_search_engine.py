@@ -22,6 +22,25 @@ class TestTravelSearchEngine:
         engine = TravelSearchEngine()
         assert engine is not None
 
+    @patch("src.search_engine.GovernanceGate")
+    @patch("src.search_engine.AzureChatOpenAI")
+    @patch("src.search_engine.AzureOpenAIEmbeddings")
+    @patch("src.search_engine.get_vector_store")
+    def test_synthesize_response_prompt_requires_direct_answer(self, mock_store, mock_embed, mock_chat, mock_gate):
+        mock_gate.return_value.validate_output.return_value = {"passed": True, "violations": []}
+        mock_llm = MagicMock()
+        mock_chat.return_value = mock_llm
+        mock_llm.invoke.return_value.content = "Refunds depend on fare rules and timing."
+
+        engine = TravelSearchEngine()
+        docs = [MagicMock(page_content="Refunds are eligible according to fare rules and refund timing.", metadata={"source": "policy.pdf"})]
+
+        engine.synthesize_response(docs, "What is the refund policy?")
+
+        prompt = mock_llm.invoke.call_args[0][0]
+        assert "Answer the question directly" in prompt
+        assert "first sentence" in prompt.lower()
+
     @patch("src.search_engine.mlflow")
     @patch("src.search_engine.AzureChatOpenAI")
     @patch("src.search_engine.AzureOpenAIEmbeddings")
@@ -47,4 +66,34 @@ class TestTravelSearchEngine:
             
             assert len(results) > 0
             assert query == "baggage rules"
+
+    def test_fallback_relevancy_handles_synonyms(self):
+        from src.evaluate import TravelChatbotEvaluator
+
+        evaluator = TravelChatbotEvaluator.__new__(TravelChatbotEvaluator)
+        dataset = {
+            "question": ["What is the refund policy?"],
+            "answer": ["Refund eligibility depends on the ticket fare and the applicable refund timing."],
+            "contexts": [["The refund policy allows refunds based on fare conditions and timing requirements."]],
+            "ground_truth": ["Refunds depend on fare conditions and timing."]
+        }
+
+        scores = evaluator._fallback_metrics(dataset)
+        assert scores["answer_relevancy"] > 0.4
+
+    @patch("src.search_engine.GovernanceGate")
+    @patch("src.search_engine.AzureChatOpenAI")
+    @patch("src.search_engine.AzureOpenAIEmbeddings")
+    @patch("src.search_engine.get_vector_store")
+    def test_select_relevant_docs_prefers_best_match(self, mock_store, mock_embed, mock_chat, mock_gate):
+        engine = TravelSearchEngine()
+
+        docs = [
+            MagicMock(page_content="Weather delays can lead to rescheduling and rebooking options.", metadata={"source": "weather.pdf"}),
+            MagicMock(page_content="Refunds must be issued within 7 days under DOT rules for credit-card purchases.", metadata={"source": "refund_policy.pdf"}),
+        ]
+
+        selected = engine._select_relevant_docs(docs, "How many days until the refund is issued?")
+
+        assert selected[0].metadata["source"] == "refund_policy.pdf"
 

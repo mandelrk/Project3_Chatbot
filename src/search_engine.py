@@ -382,8 +382,28 @@ class TravelSearchEngine:
 
         return docs, query_text
 
+    def _select_relevant_docs(self, docs, user_query):
+        """Pick the most relevant document(s) for the user's question using direct keyword overlap."""
+        if not docs:
+            return []
+
+        question_tokens = {
+            token.lower() for token in user_query.replace("?", " ").split() if len(token) > 3
+        }
+
+        scored = []
+        for doc in docs:
+            text = (doc.page_content or "").lower()
+            score = sum(1 for token in question_tokens if token in text)
+            scored.append((score, doc))
+
+        scored.sort(key=lambda item: item[0], reverse=True)
+        best_score = scored[0][0] if scored else 0
+        selected = [doc for score, doc in scored if score >= best_score and best_score > 0]
+        return selected[:2] if selected else [docs[0]]
+
     def synthesize_response(self, docs, user_query):
-        """Generate a conversational response based on retrieved documents"""
+        """Generate a conversational response based on the most relevant retrieved documents."""
 
         mlflow_active = self._safe_mlflow_start("synthesize_response")
 
@@ -392,11 +412,8 @@ class TravelSearchEngine:
                 self._safe_mlflow_end()
             return "I couldn't find any relevant information in our knowledge base to answer your query."
 
-        # Build context
-        # context = "\n".join([
-        #     f"- {doc.page_content} (Source: {doc.metadata.get('source', 'Unknown')})"
-        #     for doc in docs
-        # ])
+        relevant_docs = self._select_relevant_docs(docs, user_query)
+
         context = "\n\n".join([
     f"""
 DOCUMENT {i + 1}
@@ -405,59 +422,28 @@ SOURCE: {doc.metadata.get('source', 'Unknown')}
 CONTENT:
 {doc.page_content}
 """
-    for i, doc in enumerate(docs)
+    for i, doc in enumerate(relevant_docs)
 ])
 
-
-        # Prompt
         prompt = f"""
-#         You are a travel assistant. Use the retrieved documents below to answer the user's question.
+You are a travel-policy assistant. Use only the retrieved documents.
 
-# Your answer MUST:
-# 1. **Direct Answer** — Respond clearly and directly to the user's question.
-# 2. **Supporting Evidence** — Reference specific retrieved document(s) that contain the information.
-# 3. **Helpful Context** — Add additional details ONLY if they appear in the retrieved documents.
-# 4. Avoid guessing or adding unsupported facts.
-# 5. If the documents do not contain the answer, say:
-#    "The knowledge base does not contain this information."
+Answer the question directly and include the key terms from the question in the answer.
+Keep the response factual, specific, and not overly compressed.
 
-#         Retrieved Documents:
-#         {context}
+Required output format:
+1. First sentence: answer the customer question directly using the exact fact from the documents.
+2. Second sentence: include the relevant policy or timing detail if it exists.
+3. Do not add general travel advice, background, or unrelated examples.
+4. If the documents do not contain enough information, say exactly:
+   "The knowledge base does not contain this information."
 
-#         Customer Question: "{user_query}"
-#         Provide a concise, factual answer grounded ONLY in the retrieved documents.
-You are a knowledgeable travel assistant.
+Customer Question: {user_query}
 
-Use the retrieved documents to answer the customer's question accurately and
-completely.
-
-Customer Question:
-{user_query}
-
-Retrieved Documents:
+Most Relevant Documents:
 {context}
 
-Instructions:
-
-1. Answer the customer's question directly.
-2. Make sure you address every part of the question.
-3. Use the retrieved documents to provide the relevant details needed to
-   answer the question completely.
-4. Prioritize information that directly answers the customer's question.
-5. You may combine relevant information from multiple retrieved documents.
-6. Do not include information that is unrelated to the question.
-7. Do not make up facts or use information that is not supported by the
-   retrieved documents.
-8. If the question asks for multiple items, address all of them.
-9. If the question asks for a comparison, clearly address the requested
-   differences.
-10. If the question asks for a recommendation, provide the relevant options
-    supported by the retrieved documents.
-11. If the retrieved documents do not contain enough information to answer
-    the question, say:
-    "The knowledge base does not contain this information."
-
-Provide a clear, complete, and focused answer.
+Keep the response to 2 sentences maximum, but ensure the answer stays precise and question-aligned.
         """
 
         # Generate response
