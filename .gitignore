@@ -12,7 +12,7 @@ htmlcov/
 .venv/
 venv/
 .env
-.env.*
+!.env.*
 *.log
 *.sqlite3
 .DS_Store
